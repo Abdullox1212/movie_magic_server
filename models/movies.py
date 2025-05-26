@@ -1,6 +1,6 @@
 import random
 import psycopg2
-from main import DATABASE_URL
+from config import DATABASE_URL
 
 def create_movies_table():
     try:

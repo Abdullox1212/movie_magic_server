@@ -1,5 +1,5 @@
 import psycopg2
-from main import DATABASE_URL
+from config import DATABASE_URL
 
 
 def create_users_table():
