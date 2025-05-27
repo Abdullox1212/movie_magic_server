@@ -6,8 +6,17 @@ from routes import user as user_routes
 from routes import movies as movie_routes
 from routes import channels as channel_routes
 from routes import advert
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Yoki ['*'] - barcha uchun
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 create_users_table()
 create_movies_table()
