@@ -1,92 +1,67 @@
+from db import get_cursor
+from typing import List, Optional
 import psycopg2
-from config import DATABASE_URL
 
 def create_channels_table():
-    """Kanallar jadvalini yaratish (agar mavjud bo‘lmasa)"""
+    """Kanallar jadvalini yaratish (agar mavjud bo'lmasa)"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS channels (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL
-            )
-        ''')
-        conn.commit()
+        with get_cursor() as cursor:
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS channels (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL
+                )
+            ''')
+        print("✅ 'channels' jadvali yaratildi yoki allaqachon mavjud.")
     except Exception as e:
         print("❌ Xatolik:", e)
-    finally:
-        cursor.close()
-        conn.close()
-
 
 def add_channel(username: str):
-    """Yangi kanal qo‘shish"""
+    """Yangi kanal qo'shish"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO channels (username) VALUES (%s)",
-            (username.lower(),)
-        )
-        conn.commit()
+        with get_cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO channels (username) VALUES (%s)",
+                (username.lower(),)
+            )
     except psycopg2.IntegrityError:
-        conn.rollback()
         raise ValueError("Bu kanal allaqachon mavjud")
     except Exception as e:
         print("❌ Xatolik:", e)
-    finally:
-        cursor.close()
-        conn.close()
+        raise
 
-
-def remove_channel(username: str):
-    """Kanalni o‘chirish"""
+def remove_channel(username: str) -> bool:
+    """Kanalni o'chirish va o'chirilganligini tekshirish"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute(
-            "DELETE FROM channels WHERE username = %s",
-            (username.lower(),)
-        )
-        conn.commit()
+        with get_cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM channels WHERE username = %s",
+                (username.lower(),)
+            )
+            return cursor.rowcount > 0
     except Exception as e:
         print("❌ Xatolik:", e)
-    finally:
-        cursor.close()
-        conn.close()
+        return False
 
-
-def get_all_channels():
+def get_all_channels() -> List[str]:
     """Barcha kanallarni olish"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("SELECT username FROM channels")
-        rows = cursor.fetchall()
-        return [row[0] for row in rows]
+        with get_cursor() as cursor:
+            cursor.execute("SELECT username FROM channels")
+            return [row[0] for row in cursor.fetchall()]
     except Exception as e:
         print("❌ Xatolik:", e)
         return []
-    finally:
-        cursor.close()
-        conn.close()
-
 
 def channel_exists(username: str) -> bool:
     """Kanal mavjudligini tekshirish"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT 1 FROM channels WHERE username = %s LIMIT 1",
-            (username.lower(),)
-        )
-        exists = cursor.fetchone() is not None
-        return exists
+        with get_cursor() as cursor:
+            cursor.execute(
+                "SELECT 1 FROM channels WHERE username = %s LIMIT 1",
+                (username.lower(),)
+            )
+            return cursor.fetchone() is not None
     except Exception as e:
         print("❌ Xatolik:", e)
         return False
-    finally:
-        cursor.close()
-        conn.close()
